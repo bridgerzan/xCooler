@@ -168,8 +168,3 @@ Created by **bridgezan**.
 MIT License
 
 Copyright (c) 2026 bridgezan
-
-```
-
-این کل فایل `README.md` است؛ چیزی ازش کم یا اضافه نکن.
-```
