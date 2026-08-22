@@ -41,3 +41,25 @@ jobs:
           }
 
           Write-Host "xCooler.ps1 syntax OK" -ForegroundColor Cyan
+
+      - name: Install PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -ErrorAction Stop
+
+      - name: Analyze xCooler
+        shell: pwsh
+        run: |
+          $results = Invoke-ScriptAnalyzer `
+            -Path ".\xCooler.ps1" `
+            -Severity Warning,Error
+
+          if ($results) {
+            $results | Format-Table -AutoSize
+
+            if ($results | Where-Object Severity -eq "Error") {
+              exit 1
+            }
+          }
+
+          Write-Host "PSScriptAnalyzer passed." -ForegroundColor Cyan
