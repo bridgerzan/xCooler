@@ -1,28 +1,32 @@
-# Security Policy
+# Security
 
-## Supported Versions
+Security is important to xCooler.
 
-| Version | Supported |
-| --- | --- |
-| 1.x | Yes |
+If you discover a security vulnerability, please do not create a public issue.
 
-## Reporting a Vulnerability
+Report it privately through GitHub so it can be reviewed and fixed safely.
 
-If you discover a security vulnerability in xCooler, please report it privately before publicly disclosing it.
+## What to Include
 
-Please include:
+Please provide:
 
 - A clear description of the issue
-- Steps to reproduce the issue
+- Steps to reproduce it
 - The affected xCooler version
+- The potential impact
 - Relevant logs or screenshots
 
-Do not include passwords, tokens, personal information, or other sensitive data.
+## Security Issues
 
-## Code Transparency
+Reports involving the following are especially important:
 
-xCooler is open source.
+- Privilege escalation
+- Arbitrary command execution
+- Unsafe PowerShell behavior
+- Unexpected system changes
+- Remote code execution
+- Supply-chain vulnerabilities
 
-Users can inspect the PowerShell source code before running it.
+Please allow reasonable time for the issue to be investigated and fixed before making it public.
 
-The project does not intentionally collect, transmit, or store personal information.
+Thank you for helping keep xCooler safe.
