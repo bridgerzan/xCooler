@@ -116,5 +116,3 @@ See [LICENSE](LICENSE).
 Made by **bridgezan**.
 
 If xCooler helps you, consider giving the project a ⭐ on GitHub.
-
-````
