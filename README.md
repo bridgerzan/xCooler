@@ -1,3 +1,4 @@
+حتماً، این نسخه‌ی کامل `README.md` ـه؛ **یک‌جا کامل کپی کن** و داخل GitHub در `README.md` قرار بده:
 # xCooler
 
 <p align="center">
@@ -27,7 +28,7 @@ It creates a dedicated `xCooler` power plan and applies a small set of gaming-fo
 
 The goal is simple:
 
-**lower unnecessary power-management overhead while keeping gaming smooth.**
+**Cooler temps. Smoother gaming.**
 
 ---
 
@@ -53,3 +54,122 @@ Open PowerShell as Administrator and run:
 
 ```powershell
 irm https://raw.githubusercontent.com/bridgerzan/xCooler/main/xCooler.ps1 | iex
+```
+
+xCooler will open automatically.
+
+---
+
+## Menu
+
+```text
+[1] Turn ON
+[2] Turn OFF
+[3] Status
+[4] Uninstall
+[5] Exit
+```
+
+### Turn ON
+
+Activates the `xCooler` power plan.
+
+Your previous active power plan is saved automatically.
+
+### Turn OFF
+
+Restores the power plan that was active before xCooler.
+
+### Status
+
+Shows the current xCooler state and active Windows power plan.
+
+### Uninstall
+
+Removes the xCooler power plan and local state files.
+
+---
+
+## What xCooler Changes
+
+xCooler focuses on Windows power-management settings such as:
+
+* Processor core parking
+* PCI Express Link State Power Management
+* USB selective suspend
+* Wireless adapter power saving
+* Intel graphics power preference
+* Sleep-related settings
+
+Only settings available on the current system are changed.
+
+xCooler does not modify:
+
+* GPU drivers
+* Windows services
+* Game files
+* BIOS settings
+* Registry performance tweaks
+
+---
+
+## Safety
+
+xCooler does not run as a background service.
+
+When xCooler is turned off, the previous Windows power plan is restored whenever possible.
+
+The project is fully open source so the PowerShell code can be inspected before running it.
+
+---
+
+## Performance
+
+Results depend on the system.
+
+xCooler does not promise a fixed FPS increase or latency reduction.
+
+Its purpose is to provide a consistent gaming-oriented Windows power configuration while avoiding unnecessary system modifications.
+
+---
+
+## Requirements
+
+* Windows 10 or Windows 11
+* PowerShell
+* Administrator privileges
+
+No additional software is required.
+
+---
+
+## Uninstall
+
+Open xCooler and select:
+
+```text
+[4] Uninstall
+```
+
+This removes the xCooler power plan and its local state.
+
+---
+
+## Project
+
+Created by **bridgezan**.
+
+[GitHub](https://github.com/bridgerzan/xCooler)
+
+---
+
+## License
+
+MIT License
+
+Copyright (c) 2026 bridgezan
+
+```
+
+این کل فایل `README.md` است؛ چیزی ازش کم یا اضافه نکن.
+```
