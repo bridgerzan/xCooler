@@ -1,0 +1,54 @@
+name: Bug Report
+description: Report a problem with xCooler
+title: "[Bug]: "
+labels:
+  - bug
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting a problem with xCooler.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe what happened.
+      placeholder: Tell us what went wrong.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Tell us how to reproduce the problem.
+      placeholder: |
+        1. Run xCooler
+        2. Select an option
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: Windows 11 24H2
+
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Hardware
+      description: CPU, GPU, RAM and laptop/desktop model.
+      placeholder: |
+        CPU:
+        GPU:
+        RAM:
+        Device:
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or additional information
+      description: Add any relevant error messages or screenshots.
