@@ -4,7 +4,9 @@
 # xCooler
 
 ### Windows Power Management, tuned for smoother gaming.
-
+<p align="center">
+  <img src="assets/xCooler-banner.png" alt="xCooler">
+</p>
 <p>
   <a href="https://github.com/bridgerzan/xCooler/releases">
     <img src="https://img.shields.io/github/v/release/bridgerzan/xCooler?style=for-the-badge&color=00D9FF&label=release" alt="Release">
