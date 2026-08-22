@@ -1,47 +1,157 @@
+<div align="center">
 
-# xCooler
+# ⚡ xCooler
 
-A lightweight Windows power plan manager built for smoother gaming, lower latency, and better thermal efficiency.
+### Windows Power Management, tuned for smoother gaming.
 
-Made by [bridgezan](https://github.com/bridgerzan)
+<p>
+  <a href="https://github.com/bridgerzan/xCooler/releases">
+    <img src="https://img.shields.io/github/v/release/bridgerzan/xCooler?style=for-the-badge&color=00D9FF&label=release" alt="Release">
+  </a>
+  <a href="https://github.com/bridgerzan/xCooler/stargazers">
+    <img src="https://img.shields.io/github/stars/bridgerzan/xCooler?style=for-the-badge&color=00D9FF" alt="Stars">
+  </a>
+  <a href="https://github.com/bridgerzan/xCooler/blob/main/LICENSE">
+    <img src="https://img.shields.io/github/license/bridgerzan/xCooler?style=for-the-badge&color=00D9FF" alt="License">
+  </a>
+</p>
 
-## Quick Start
+<p>
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-00D9FF?style=flat-square" alt="Windows">
+  <img src="https://img.shields.io/badge/PowerShell-5%2B-00D9FF?style=flat-square" alt="PowerShell">
+  <img src="https://img.shields.io/badge/Lightweight-00D9FF?style=flat-square" alt="Lightweight">
+</p>
 
-Open PowerShell and run:
+<br>
+
+<a href="https://github.com/bridgerzan/xCooler">
+  <img src="https://raw.githubusercontent.com/bridgerzan/xCooler/main/assets/banner.png" alt="xCooler Banner" width="850">
+</a>
+
+<br>
+
+<p>
+  <strong>Lightweight</strong>
+  &nbsp;•&nbsp;
+  <strong>Transparent</strong>
+  &nbsp;•&nbsp;
+  <strong>Reversible</strong>
+</p>
+
+</div>
+
+---
+
+## ⚡ Quick Start
+
+Run PowerShell and paste:
 
 ```powershell
 irm https://raw.githubusercontent.com/bridgerzan/xCooler/main/xCooler.ps1 | iex
-````
+```
 
-xCooler will request administrator access when required and open its interactive menu.
+xCooler automatically requests administrator privileges when required.
 
-## Features
+---
 
-* Creates a dedicated `xCooler` power plan
+## 🎮 What is xCooler?
+
+**xCooler** is a lightweight PowerShell utility that creates a dedicated Windows power plan focused on a smoother gaming experience.
+
+It configures Windows power management to balance:
+
+* ⚡ Performance
+* 🎮 Frame consistency
+* 🖱️ Input responsiveness
+* 🧊 Thermal efficiency
+* 🔋 Power behavior
+
+xCooler uses Windows' native `powercfg` utility and does not require additional software.
+
+---
+
+## ✦ Features
+
+<table>
+<tr>
+<td width="50%">
+
+### ⚡ Performance
+
+* Dedicated xCooler power plan
 * CPU core parking configuration
-* PCI Express power management configuration
-* USB selective suspend configuration
-* Wireless adapter power configuration
-* Intel graphics power configuration
-* Display and sleep configuration
-* Automatically restores the previous power plan
-* Interactive ON / OFF menu
-* Administrator elevation
-* Lightweight PowerShell implementation
-* No installation wizard
-* No background service
+* PCI Express configuration
+* Intel graphics configuration
+* Wireless adapter configuration
 
-## How It Works
+</td>
+<td width="50%">
 
-xCooler creates a separate Windows power plan based on the Balanced plan and applies gaming-focused power management settings to it.
+### 🎮 Gaming
 
-Your existing power plans are not modified.
+* USB power management
+* Reduced unnecessary power-saving behavior
+* Consistent CPU behavior
+* Gaming-focused power configuration
+* Lightweight execution
 
-When xCooler is turned off, the previously active power plan is restored when possible.
+</td>
+</tr>
+</table>
 
-## Usage
+---
 
-Run xCooler and choose:
+## 🧊 Power Management
+
+xCooler creates its own power plan instead of modifying your existing plans.
+
+```text
+Windows Balanced
+       │
+       ▼
+   ┌─────────┐
+   │ xCooler │
+   └─────────┘
+       │
+       ├── CPU
+       ├── USB
+       ├── PCIe
+       ├── Wireless
+       ├── Graphics
+       └── Display
+```
+
+Your original power plans remain available.
+
+---
+
+## ↩️ Safe Restore
+
+Before activating xCooler, the currently active power plan is saved.
+
+When xCooler is turned off:
+
+```text
+xCooler ON
+    │
+    ▼
+Previous plan saved
+    │
+    ▼
+xCooler activated
+    │
+    ▼
+xCooler OFF
+    │
+    ▼
+Previous plan restored
+```
+
+If the previous plan is no longer available, Windows Balanced is used as a fallback.
+
+---
+
+## 🖥️ Menu
 
 ```text
 [1] Turn ON
@@ -57,7 +167,7 @@ Activates the xCooler power plan.
 
 ### Turn OFF
 
-Restores the power plan that was active before xCooler was enabled.
+Restores the previously active power plan.
 
 ### Status
 
@@ -65,54 +175,97 @@ Displays the current xCooler state and power plan information.
 
 ### Uninstall
 
-Removes the xCooler power plan from Windows.
+Removes the xCooler power plan and stored state.
 
-## Requirements
+---
 
-* Windows 10 or Windows 11
+## 🔐 Safety
+
+xCooler uses Windows' built-in power management system.
+
+It does **not**:
+
+* Install drivers
+* Install background services
+* Create scheduled tasks
+* Modify BIOS settings
+* Modify CPU voltage
+* Modify GPU voltage
+* Modify firmware
+
+All configuration changes are applied to the Windows power plan.
+
+---
+
+## 🪶 Requirements
+
+* Windows 10
+* Windows 11
 * PowerShell
 * Administrator privileges
 
-## Compatibility
+---
 
-xCooler is designed for Windows systems that support the Windows `powercfg` utility and the power-management settings used by the script.
+## 📦 Installation
 
-Some power settings may not exist on every system. xCooler skips unsupported settings instead of requiring them.
+There is no installer.
 
-## Safety
+Run:
 
-xCooler uses the built-in Windows `powercfg` utility.
+```powershell
+irm https://raw.githubusercontent.com/bridgerzan/xCooler/main/xCooler.ps1 | iex
+```
 
-It does not install drivers, services, scheduled tasks, or third-party software.
+That's it.
 
-The script does not modify CPU voltage, BIOS settings, GPU voltage, or hardware firmware.
+---
 
-## Restore
+## 🗑️ Uninstall
 
-Before activating xCooler, the script records the currently active power plan.
+Launch xCooler and select:
 
-When xCooler is turned off, it attempts to restore that plan automatically.
+```text
+[4] Uninstall
+```
 
-If the previous plan is no longer available, Windows Balanced is used as a fallback.
+The xCooler power plan and its stored state are removed.
 
-## Uninstall
+---
 
-Select `Uninstall` from the xCooler menu.
+## 🚀 Roadmap
 
-This removes the xCooler power plan and its stored state files.
+* [x] Dedicated power plan
+* [x] Automatic administrator elevation
+* [x] Previous-plan restoration
+* [x] Interactive terminal interface
+* [x] Status system
+* [x] Uninstall support
+* [ ] More hardware-aware profiles
+* [ ] Additional optimization profiles
+* [ ] Expanded compatibility testing
 
-## Version
+---
 
-Current release:
+## 📋 Release
 
-**v1.0.0**
+**Current version:** `v1.0.0`
 
-## License
+<a href="https://github.com/bridgerzan/xCooler/releases">
+  View Releases →
+</a>
 
-See [LICENSE](LICENSE).
+---
 
-## Credits
+<div align="center">
 
-Made by **bridgezan**.
+### Made by bridgezan
 
-If xCooler helps you, consider giving the project a ⭐ on GitHub.
+<a href="https://github.com/bridgerzan">
+  <img src="https://img.shields.io/badge/GitHub-bridgerzan-00D9FF?style=for-the-badge&logo=github&logoColor=white" alt="GitHub">
+</a>
+
+<br><br>
+
+⭐ If xCooler is useful to you, consider starring the repository.
+
+</div>
