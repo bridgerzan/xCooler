@@ -1,4 +1,4 @@
-$ErrorActionPreference = "SilentlyContinue"
+$ErrorActionPreference = "Stop"
 
 $Version = "1.0.0"
 $PlanName = "xCooler"
@@ -29,7 +29,7 @@ $Sleep = "238c9fa8-0aad-41ed-83f4-97be242c8f20"
 $HybridSleep = "94ac6d29-73ce-41a6-809f-6363ba21b47e"
 $SleepAfter = "29f6c1db-86da-48c5-9fdb-f2b67b1f44da"
 
-function Is-Admin {
+function Test-Admin {
     $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
     $principal = [Security.Principal.WindowsPrincipal]::new($identity)
     return $principal.IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -37,25 +37,47 @@ function Is-Admin {
 
 function Get-ActivePlan {
     $output = powercfg /getactivescheme 2>&1
+    $text = $output -join " "
 
-    if ($output -match "Power Scheme GUID:\s*([a-fA-F0-9-]+)\s+\((.+)\)") {
+    if ($text -match "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})") {
+        $guid = $matches[1]
+        $name = $text.Substring($text.IndexOf(")") + 1).Trim()
+
+        if ($text -match "\(([^()]*)\)") {
+            $name = $matches[1]
+        }
+
         return [PSCustomObject]@{
-            Guid = $matches[1]
-            Name = $matches[2]
+            Guid = $guid
+            Name = $name
         }
     }
 
     return $null
 }
 
-function Get-PlanGuid {
+function Get-Plans {
     $output = powercfg /list 2>&1
+    $plans = @()
 
     foreach ($line in $output) {
-        if ($line -match "Power Scheme GUID:\s*([a-fA-F0-9-]+)\s+\((.+)\)") {
-            if ($matches[2].Trim() -ieq $PlanName) {
-                return $matches[1]
+        if ($line -match "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}).*\(([^()]*)\)") {
+            $plans += [PSCustomObject]@{
+                Guid = $matches[1]
+                Name = $matches[2].Trim()
             }
+        }
+    }
+
+    return $plans
+}
+
+function Get-XCoolerGuid {
+    $plans = Get-Plans
+
+    foreach ($plan in $plans) {
+        if ($plan.Name -ieq $PlanName) {
+            return $plan.Guid
         }
     }
 
@@ -69,9 +91,13 @@ function Test-PowerSetting {
         [string]$Setting
     )
 
-    $output = powercfg /query $Plan $Subgroup $Setting 2>&1
-
-    return ($output -match "Power Setting GUID:")
+    try {
+        $output = powercfg /query $Plan $Subgroup $Setting 2>&1
+        return ($LASTEXITCODE -eq 0 -and ($output -join "`n") -match "Power Setting GUID")
+    }
+    catch {
+        return $false
+    }
 }
 
 function Set-ACSetting {
@@ -84,19 +110,33 @@ function Set-ACSetting {
 
     if (Test-PowerSetting $Plan $Subgroup $Setting) {
         powercfg /setacvalueindex $Plan $Subgroup $Setting $Value | Out-Null
+        return ($LASTEXITCODE -eq 0)
     }
+
+    return $false
 }
 
 function Create-XCooler {
-    $existing = Get-PlanGuid
+    $existing = Get-XCoolerGuid
 
     if ($existing) {
+        Set-ACSetting $existing $Processor $CoreMin 100
+        Set-ACSetting $existing $Processor $CoreMax 100
+        Set-ACSetting $existing $Processor $IdleDisable 0
+        Set-ACSetting $existing $PCIExpress $ASPM 0
+        Set-ACSetting $existing $USB $USBSuspend 0
+        Set-ACSetting $existing $Wireless $WirelessPower 0
+        Set-ACSetting $existing $IntelGraphics $IntelGraphicsPower 1
+        Set-ACSetting $existing $Display $DisplayTimeout 0
+        Set-ACSetting $existing $Sleep $HybridSleep 0
+        Set-ACSetting $existing $SleepAfter 0
         return $existing
     }
 
     $output = powercfg /duplicatescheme SCHEME_BALANCED 2>&1
+    $text = $output -join " "
 
-    if ($output -notmatch "Power Scheme GUID:\s*([a-fA-F0-9-]+)") {
+    if ($text -notmatch "([a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12})") {
         return $null
     }
 
@@ -119,92 +159,157 @@ function Create-XCooler {
     Set-ACSetting $guid $Display $DisplayTimeout 0
 
     Set-ACSetting $guid $Sleep $HybridSleep 0
-    Set-ACSetting $guid $Sleep $SleepAfter 0
-
-    powercfg /setactive $guid | Out-Null
+    Set-ACSetting $guid $SleepAfter 0
 
     return $guid
 }
 
 function Save-PreviousPlan {
     $active = Get-ActivePlan
+    $xCooler = Get-XCoolerGuid
 
     if (-not $active) {
-        return
+        return $false
     }
-
-    $xCooler = Get-PlanGuid
 
     if ($xCooler -and $active.Guid -ieq $xCooler) {
-        return
+        return $false
     }
 
-    Set-Content -Path $BackupPath -Value $active.Guid -Encoding ASCII
+    Set-Content -Path $BackupPath -Value $active.Guid -Encoding ASCII -Force
+    return $true
 }
 
-function Turn-On {
-    $xCooler = Get-PlanGuid
-
-    if (-not $xCooler) {
-        $xCooler = Create-XCooler
+function Get-SavedPlan {
+    if (-not (Test-Path $BackupPath)) {
+        return $null
     }
 
-    if (-not $xCooler) {
-        Write-Host ""
-        Write-Host "Unable to create xCooler." -ForegroundColor Red
-        Start-Sleep -Seconds 2
-        return
+    $value = (Get-Content $BackupPath -ErrorAction SilentlyContinue | Select-Object -First 1)
+
+    if (-not $value) {
+        return $null
     }
 
-    $active = Get-ActivePlan
+    $value = $value.Trim()
 
-    if ($active -and $active.Guid -ine $xCooler) {
-        Save-PreviousPlan
+    if ($value -match "^[a-fA-F0-9-]{36}$") {
+        return $value
     }
 
-    powercfg /setactive $xCooler | Out-Null
-
-    Set-Content -Path $StatePath -Value "ON" -Encoding ASCII
+    return $null
 }
 
-function Turn-Off {
-    $xCooler = Get-PlanGuid
-    $active = Get-ActivePlan
+function Test-PlanExists {
+    param(
+        [string]$Guid
+    )
 
-    if (-not $xCooler) {
-        return
+    if (-not $Guid) {
+        return $false
     }
 
-    if (-not $active -or $active.Guid -ine $xCooler) {
-        return
-    }
-
-    $restored = $false
-
-    if (Test-Path $BackupPath) {
-        $previous = (Get-Content $BackupPath -ErrorAction SilentlyContinue | Select-Object -First 1).Trim()
-
-        if ($previous) {
-            $plans = powercfg /list 2>&1
-
-            if ($plans -match [regex]::Escape($previous)) {
-                powercfg /setactive $previous | Out-Null
-                $restored = $true
-            }
+    foreach ($plan in Get-Plans) {
+        if ($plan.Guid -ieq $Guid) {
+            return $true
         }
     }
 
-    if (-not $restored) {
-        powercfg /setactive SCHEME_BALANCED | Out-Null
-    }
+    return $false
+}
 
-    Remove-Item $BackupPath -Force -ErrorAction SilentlyContinue
-    Set-Content -Path $StatePath -Value "OFF" -Encoding ASCII
+function Turn-On {
+    try {
+        $xCooler = Get-XCoolerGuid
+
+        if (-not $xCooler) {
+            $xCooler = Create-XCooler
+        }
+
+        if (-not $xCooler) {
+            Write-Host ""
+            Write-Host "Unable to create xCooler." -ForegroundColor Red
+            Start-Sleep -Seconds 2
+            return
+        }
+
+        $active = Get-ActivePlan
+
+        if ($active -and $active.Guid -ine $xCooler) {
+            Save-PreviousPlan
+        }
+
+        powercfg /setactive $xCooler | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Unable to activate xCooler."
+        }
+
+        Set-Content -Path $StatePath -Value "ON" -Encoding ASCII -Force
+
+        Write-Host ""
+        Write-Host "xCooler is ON." -ForegroundColor Cyan
+        Start-Sleep -Milliseconds 700
+    }
+    catch {
+        Write-Host ""
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        Start-Sleep -Seconds 2
+    }
+}
+
+function Turn-Off {
+    try {
+        $xCooler = Get-XCoolerGuid
+        $active = Get-ActivePlan
+
+        if (-not $xCooler) {
+            Write-Host ""
+            Write-Host "xCooler is not installed." -ForegroundColor Yellow
+            Start-Sleep -Seconds 2
+            return
+        }
+
+        if (-not $active -or $active.Guid -ine $xCooler) {
+            Set-Content -Path $StatePath -Value "OFF" -Encoding ASCII -Force
+            Write-Host ""
+            Write-Host "xCooler is already OFF." -ForegroundColor DarkGray
+            Start-Sleep -Milliseconds 700
+            return
+        }
+
+        $restored = $false
+        $previous = Get-SavedPlan
+
+        if ($previous -and (Test-PlanExists $previous)) {
+            powercfg /setactive $previous | Out-Null
+
+            if ($LASTEXITCODE -eq 0) {
+                $restored = $true
+            }
+        }
+
+        if (-not $restored) {
+            powercfg /setactive SCHEME_BALANCED | Out-Null
+        }
+
+        Remove-Item $BackupPath -Force -ErrorAction SilentlyContinue
+        Set-Content -Path $StatePath -Value "OFF" -Encoding ASCII -Force
+
+        Write-Host ""
+        Write-Host "xCooler is OFF." -ForegroundColor Cyan
+        Start-Sleep -Milliseconds 700
+    }
+    catch {
+        Write-Host ""
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        Start-Sleep -Seconds 2
+    }
 }
 
 function Get-XCoolerStatus {
     $active = Get-ActivePlan
-    $xCooler = Get-PlanGuid
+    $xCooler = Get-XCoolerGuid
 
     if (-not $xCooler) {
         return "NOT INSTALLED"
@@ -218,29 +323,40 @@ function Get-XCoolerStatus {
 }
 
 function Remove-XCooler {
-    $xCooler = Get-PlanGuid
+    try {
+        $xCooler = Get-XCoolerGuid
 
-    if (-not $xCooler) {
+        if (-not $xCooler) {
+            Write-Host ""
+            Write-Host "xCooler is not installed." -ForegroundColor DarkGray
+            Start-Sleep -Seconds 2
+            return
+        }
+
+        $active = Get-ActivePlan
+
+        if ($active -and $active.Guid -ieq $xCooler) {
+            Turn-Off
+        }
+
+        powercfg /delete $xCooler | Out-Null
+
+        if ($LASTEXITCODE -ne 0) {
+            throw "Unable to remove xCooler power plan."
+        }
+
+        Remove-Item $BackupPath -Force -ErrorAction SilentlyContinue
+        Remove-Item $StatePath -Force -ErrorAction SilentlyContinue
+
         Write-Host ""
-        Write-Host "xCooler is not installed." -ForegroundColor DarkGray
+        Write-Host "xCooler removed." -ForegroundColor Cyan
         Start-Sleep -Seconds 2
-        return
     }
-
-    $active = Get-ActivePlan
-
-    if ($active -and $active.Guid -ieq $xCooler) {
-        Turn-Off
+    catch {
+        Write-Host ""
+        Write-Host $_.Exception.Message -ForegroundColor Red
+        Start-Sleep -Seconds 2
     }
-
-    powercfg /delete $xCooler | Out-Null
-
-    Remove-Item $BackupPath -Force -ErrorAction SilentlyContinue
-    Remove-Item $StatePath -Force -ErrorAction SilentlyContinue
-
-    Write-Host ""
-    Write-Host "xCooler removed." -ForegroundColor Cyan
-    Start-Sleep -Seconds 2
 }
 
 function Show-Header {
@@ -272,14 +388,18 @@ function Show-Header {
 
     Write-Host "xCooler Status     : " -NoNewline -ForegroundColor Cyan
 
-    if ($status -eq "ON") {
-        Write-Host "ON" -ForegroundColor Cyan
-    }
-    elseif ($status -eq "OFF") {
-        Write-Host "OFF" -ForegroundColor DarkGray
-    }
-    else {
-        Write-Host "NOT INSTALLED" -ForegroundColor Yellow
+    switch ($status) {
+        "ON" {
+            Write-Host "ON" -ForegroundColor Cyan
+        }
+
+        "OFF" {
+            Write-Host "OFF" -ForegroundColor DarkGray
+        }
+
+        default {
+            Write-Host "NOT INSTALLED" -ForegroundColor Yellow
+        }
     }
 
     Write-Host ""
@@ -295,7 +415,7 @@ function Show-Status {
     Clear-Host
 
     $active = Get-ActivePlan
-    $xCooler = Get-PlanGuid
+    $xCooler = Get-XCoolerGuid
     $status = Get-XCoolerStatus
 
     Write-Host ""
@@ -303,31 +423,30 @@ function Show-Status {
     Write-Host ""
 
     Write-Host "Version          : " -NoNewline -ForegroundColor Cyan
-    Write-Host $Version
+    Write-Host $Version -ForegroundColor White
 
     Write-Host "Status           : " -NoNewline -ForegroundColor Cyan
-    Write-Host $status
+    Write-Host $status -ForegroundColor White
 
     Write-Host "xCooler GUID     : " -NoNewline -ForegroundColor Cyan
 
     if ($xCooler) {
-        Write-Host $xCooler
+        Write-Host $xCooler -ForegroundColor White
     }
     else {
-        Write-Host "Not installed"
+        Write-Host "Not installed" -ForegroundColor DarkGray
     }
 
     Write-Host "Active Plan      : " -NoNewline -ForegroundColor Cyan
 
     if ($active) {
-        Write-Host $active.Name
+        Write-Host $active.Name -ForegroundColor White
     }
     else {
-        Write-Host "Unknown"
+        Write-Host "Unknown" -ForegroundColor DarkGray
     }
 
     Write-Host ""
-
     Read-Host "Press ENTER to continue"
 }
 
@@ -358,20 +477,46 @@ function Start-XCooler {
                 Clear-Host
                 return
             }
+
+            default {
+                Write-Host ""
+                Write-Host "Invalid selection." -ForegroundColor DarkGray
+                Start-Sleep -Milliseconds 600
+            }
         }
     }
 }
 
-if (-not (Is-Admin)) {
-    $encoded = [Convert]::ToBase64String([Text.Encoding]::Unicode.GetBytes($MyInvocation.MyCommand.Definition))
+if (-not (Test-Admin)) {
+    if ($PSCommandPath -and (Test-Path $PSCommandPath)) {
+        Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -File `"$PSCommandPath`""
+        exit
+    }
 
-    Start-Process powershell.exe -Verb RunAs -ArgumentList "-NoProfile -ExecutionPolicy Bypass -EncodedCommand $encoded"
-
-    exit
+    Write-Host ""
+    Write-Host "Administrator privileges are required." -ForegroundColor Red
+    Write-Host ""
+    Read-Host "Press ENTER to exit"
+    exit 1
 }
 
-if (-not (Get-PlanGuid)) {
-    Create-XCooler | Out-Null
-}
+try {
+    if (-not (Get-XCoolerGuid)) {
+        $created = Create-XCooler
 
-Start-XCooler
+        if (-not $created) {
+            throw "Unable to create xCooler power plan."
+        }
+    }
+
+    Start-XCooler
+}
+catch {
+    Clear-Host
+    Write-Host ""
+    Write-Host "xCooler could not start." -ForegroundColor Red
+    Write-Host ""
+    Write-Host $_.Exception.Message -ForegroundColor Red
+    Write-Host ""
+    Read-Host "Press ENTER to exit"
+}
