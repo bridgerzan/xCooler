@@ -12,21 +12,32 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate PowerShell
+      - name: Validate xCooler
         shell: pwsh
         run: |
-          $errors = $null
+          $file = Join-Path $PWD "xCooler.ps1"
+
+          if (-not (Test-Path $file)) {
+            Write-Error "xCooler.ps1 was not found."
+            exit 1
+          }
+
           $tokens = $null
+          $errors = $null
 
           [System.Management.Automation.Language.Parser]::ParseFile(
-            "$PWD\xCooler.ps1",
+            $file,
             [ref]$tokens,
             [ref]$errors
           ) | Out-Null
 
           if ($errors.Count -gt 0) {
-            $errors | Format-List
+            Write-Host ""
+            Write-Host "PowerShell syntax errors found:" -ForegroundColor Red
+            $errors | ForEach-Object {
+              Write-Host $_.Message -ForegroundColor Red
+            }
             exit 1
           }
 
-          Write-Host "xCooler.ps1 syntax OK"
+          Write-Host "xCooler.ps1 syntax OK" -ForegroundColor Cyan
