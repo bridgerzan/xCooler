@@ -1,4 +1,3 @@
-حتماً، این نسخه‌ی کامل `README.md` ـه؛ **یک‌جا کامل کپی کن** و داخل GitHub در `README.md` قرار بده:
 # xCooler
 
 <p align="center">
