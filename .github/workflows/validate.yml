@@ -1,0 +1,32 @@
+name: Validate
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  powershell:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate PowerShell
+        shell: pwsh
+        run: |
+          $errors = $null
+          $tokens = $null
+
+          [System.Management.Automation.Language.Parser]::ParseFile(
+            "$PWD\xCooler.ps1",
+            [ref]$tokens,
+            [ref]$errors
+          ) | Out-Null
+
+          if ($errors.Count -gt 0) {
+            $errors | Format-List
+            exit 1
+          }
+
+          Write-Host "xCooler.ps1 syntax OK"
